@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. Interface</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        if (typeof io === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"><\/script>');
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+
+<body>
+    <div id="gesture-toast"></div>
+    <div id="background-layer"></div>
+    <div class="container">
+        <header>
+            <h1><span>J.A.R.V.I.S.</span></h1>
+            <div class="status-bar">
+                <span id="system-status" class="zeta-glow-target">SISTEMA ONLINE</span>
+                <div class="header-controls">
+                    <button id="recalibrate-btn" title="Recalibrar HUD" class="header-btn"><i
+                            class="fas fa-cog"></i></button>
+                    <button id="restart-btn" title="Reiniciar Jarvis" class="header-btn"><i
+                            class="fas fa-sync-alt"></i></button>
+                    <button id="minimize-btn" title="Minimizar HUD" class="header-btn"><i
+                            class="fas fa-minus"></i></button>
+                    <span id="system-time" class="zeta-glow-target">00:00:00</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Chat Sidebar -->
+            <aside class="chat-sidebar" id="chat-sidebar">
+                <div class="chat-header" id="chat-header">TERMINAL DE COMANDO
+                    <button id="collapse-btn" title="Minimizar/Expandir">▼</button>
+                </div>
+                <div class="agent-selector" id="agent-selector">
+                    <div class="agent-group" id="group-core">
+
+                        <div class="agent-tabs-row">
+                            <button class="agent-tab active" data-agent="jarvis">Jarvis</button>
+                            <button class="agent-tab" data-agent="zeta">Zeta</button>
+                            <button class="agent-tab" data-agent="nano">Nano</button>
+                            <button class="agent-tab" data-agent="fire">Fire</button>
+                            <button class="agent-tab" data-agent="cuzo">Cuzo</button>
+                            <button class="agent-tab" data-agent="rimex">Rimex</button>
+                            <button class="agent-tab" data-agent="hugin">Hugin</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="agent-info" id="agent-info">
+                    <p id="agent-description">O seu assistente central e inteligência primária.</p>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message system-msg">Sistema Iniciado. Aguardando comandos.</div>
+                </div>
+                <div class="chat-input-area">
+                    <button id="clear-chat-btn" title="Limpar Chat"><i class="fas fa-trash-alt"></i></button>
+                    <input type="text" id="chat-input" placeholder="Digite seu comando..." autocomplete="off">
+                    <button id="send-btn" title="Enviar comando"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <!-- Sidebar PC Health HUD - Removido a pedido do usuário -->
+
+                <!-- Resize Handles -->
+                <div class="resize-handle resize-right" id="resize-right"></div>
+                <div class="resize-handle resize-bottom" id="resize-bottom"></div>
+                <div class="resize-handle resize-corner" id="resize-corner"></div>
+            </aside>
+
+            <!-- ==== FULL HUD ORB ==== -->
+            <main class="orb-area">
+                <div class="orb-container">
+                    <!-- SVG Circuit Board Traces -->
+                    <svg class="hud-circuits" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Top traces -->
+                        <line x1="450" y1="120" x2="450" y2="60" />
+                        <line x1="450" y1="60" x2="530" y2="60" />
+                        <rect x="530" y="55" width="10" height="10" />
+                        <line x1="450" y1="80" x2="350" y2="80" />
+                        <line x1="350" y1="80" x2="350" y2="40" />
+                        <line x1="350" y1="40" x2="250" y2="40" />
+                        <rect x="235" y="36" width="16" height="8" />
+                        <!-- Artefatos removidos a pedido do usuário -->
+
+                        <!-- Bottom traces -->
+                        <line x1="450" y1="480" x2="450" y2="540" />
+                        <line x1="450" y1="530" x2="300" y2="530" />
+                        <line x1="300" y1="530" x2="300" y2="560" />
+                        <rect x="240" y="558" width="64" height="10" class="hud-interactive" id="node-pc-trigger" />
+                        <rect x="310" y="558" width="100" height="10" class="hud-interactive"
+                            id="node-mirror-trigger" />
+                        <text x="315" y="565" fill="var(--accent)" font-size="6"
+                            style="pointer-events:none; opacity: 0.8;">MIRROR_LINK</text>
+                        <line x1="450" y1="510" x2="600" y2="510" />
+                        <line x1="600" y1="510" x2="600" y2="545" />
+                        <line x1="600" y1="545" x2="750" y2="545" />
+                        <line x1="760" y1="545" x2="820" y2="545" />
+                        <line x1="440" y1="490" x2="350" y2="490" />
+                        <line x1="350" y1="490" x2="350" y2="560" />
+                        <!-- Left traces -->
+                        <line x1="280" y1="300" x2="70" y2="300" />
+                        <line x1="70" y1="300" x2="70" y2="240" />
+                        <rect x="50" y="228" width="40" height="14" />
+                        <line x1="280" y1="280" x2="80" y2="280" />
+                        <line x1="80" y1="280" x2="80" y2="200" />
+                        <line x1="80" y1="200" x2="30" y2="200" />
+                        <line x1="280" y1="320" x2="60" y2="320" />
+                        <line x1="60" y1="320" x2="60" y2="380" />
+                        <rect x="40" y="380" width="30" height="8" />
+                        <line x1="280" y1="340" x2="110" y2="340" />
+                        <line x1="110" y1="340" x2="110" y2="420" />
+                        <line x1="110" y1="420" x2="40" y2="420" />
+                        <!-- Right traces -->
+                        <line x1="620" y1="300" x2="830" y2="300" />
+                        <line x1="830" y1="300" x2="830" y2="240" />
+                        <rect x="830" y="228" width="40" height="14" />
+                        <line x1="620" y1="280" x2="820" y2="280" />
+                        <line x1="820" y1="280" x2="820" y2="200" />
+                        <line x1="820" y1="200" x2="875" y2="200" />
+                        <line x1="620" y1="320" x2="840" y2="320" />
+                        <line x1="840" y1="320" x2="840" y2="380" />
+                        <line x1="620" y1="350" x2="780" y2="350" />
+                        <line x1="780" y1="350" x2="780" y2="440" />
+                        <line x1="780" y1="440" x2="860" y2="440" />
+                        <rect x="855" y="435" width="10" height="10" class="hud-interactive" id="node-access-trigger" />
+                        <!-- Corner nodes -->
+                        <circle cx="530" cy="60" r="3" class="hud-node" />
+                        <circle cx="350" cy="80" r="3" class="hud-node" />
+                        <circle cx="600" cy="90" r="3" class="hud-node" />
+                        <circle cx="450" cy="530" r="3" class="hud-node" />
+                        <circle cx="600" cy="510" r="3" class="hud-node" />
+                        <circle cx="70" cy="300" r="3" class="hud-node" />
+                        <circle cx="80" cy="200" r="3" class="hud-node" />
+                        <circle cx="830" cy="300" r="3" class="hud-node" />
+                    </svg>
+
+                    <!-- Main HUD Component (Hyper-Fidelity Phase 2) -->
+                    <div id="orb-container">
+                        <svg id="hud-svg" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                            <defs>
+                                <filter id="hud-glow-heavy" x="-100%" y="-100%" width="300%" height="300%">
+                                    <feGaussianBlur stdDeviation="2" result="blur" />
+                                    <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0" />
+                                    <feMerge>
+                                        <feMergeNode />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                                <filter id="text-glow-bright">
+                                    <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                    <feMerge>
+                                        <feMergeNode in="blur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                            </defs>
+
+                            <!-- LAYER 15: Background Blueprint (Diagrams scattered) -->
+                            <g class="hud-blueprint" stroke="var(--accent)" stroke-width="0.3" fill="none"
+                                opacity="0.12">
+                                <circle cx="250" cy="250" r="248" stroke-dasharray="1,10" />
+                                <rect x="420" y="50" width="60" height="20" />
+                                <text x="425" y="62" fill="var(--accent)" font-size="4">MARK-VII-SYNC</text>
+                                <text x="425" y="68" fill="var(--accent)" font-size="3">V-LAT: 0.04ms</text>
+                                <path d="M 20,400 L 80,400 L 80,460 L 20,460 Z" />
+                                <line x1="20" y1="430" x2="80" y2="430" />
+                                <text x="25" y="420" fill="var(--accent)" font-size="4">KERNEL::PROCESS</text>
+                                <text x="25" y="445" fill="var(--accent)" font-size="3">0x8849F - STABLE</text>
+
+                                <!-- New clustered data points -->
+                                <g transform="translate(400, 400)" font-size="3">
+                                    <text y="0">OS_CORE: ACTIVE</text>
+                                    <text y="8">HOLOGRAPHIC: 100%</text>
+                                    <text y="16">NET_ENCRYPT: AES256</text>
+                                </g>
+                            </g>
+
+                            <g id="orb">
+                                <!-- LAYER 14: Ultra-Outer Dotted Ring (Expanded) -->
+                                <circle cx="250" cy="250" r="245" fill="none" stroke="var(--accent)" stroke-width="0.5"
+                                    stroke-dasharray="0.5, 4" stroke-opacity="0.2" class="rotate-cw-slow" />
+
+                                <!-- LAYER 13: Top/Bottom Structural Modules (Asymmetric) -->
+                                <!-- Modules removed as requested -->
+
+                                <!-- LAYER 12: Main Outer Bracket Segments -->
+                                <g class="rotate-cw-slow" stroke="var(--accent)" fill="none">
+                                    <path d="M 250,20 A 230,230 0 0,1 480,250" stroke-width="3" stroke-linecap="square"
+                                        stroke-opacity="0.8" />
+                                    <path d="M 20,250 A 230,230 0 0,0 250,480" stroke-width="3" stroke-linecap="square"
+                                        stroke-opacity="0.8" />
+                                </g>
+
+
+
+                                <!-- LAYER 11: Radial Measurement Ticks (360) -->
+                                <g class="hud-ticks-360" stroke="var(--accent)" stroke-width="0.5" stroke-opacity="0.3">
+                                    <circle cx="250" cy="250" r="220" stroke-dasharray="1, 7.7" />
+                                    <circle cx="250" cy="250" r="210" stroke-dasharray="2, 10" stroke-opacity="0.1" />
+                                </g>
+
+                                <!-- LAYER 10: Tech Block Ring (Heavy) -->
+                                <circle cx="250" cy="250" r="205" fill="none" stroke="var(--accent)" stroke-width="12"
+                                    stroke-dasharray="2, 22" stroke-opacity="0.4" class="rotate-ccw-fast" />
+
+                                <!-- LAYER 9: Double Thin Tech Rings -->
+                                <circle cx="250" cy="250" r="190" fill="none" stroke="var(--accent)" stroke-width="1"
+                                    stroke-dasharray="100, 20" stroke-opacity="0.6" class="rotate-cw" />
+                                <circle cx="250" cy="250" r="185" fill="none" stroke="var(--accent)" stroke-width="0.5"
+                                    stroke-opacity="0.3" class="rotate-ccw" />
+
+                                <!-- LAYER 8: Accent Indicators (Yellow - Recalibrated) -->
+                                <g class="hud-chromatic-accents">
+                                    <circle cx="250" cy="110" r="3" class="hud-node" fill="var(--agent-secondary)" />
+                                    <circle cx="265" cy="113" r="2.5" class="hud-node" fill="var(--agent-secondary)" />
+                                    <circle cx="280" cy="122" r="2.5" class="hud-node" fill="var(--agent-secondary)" />
+                                    <circle cx="235" cy="113" r="2.5" class="hud-node" fill="var(--agent-secondary)" />
+                                    <circle cx="220" cy="122" r="2.5" class="hud-node" fill="var(--agent-secondary)" />
+
+                                    <!-- Yellow detailed arc -->
+                                    <path d="M 80,310 A 180,180 0 0,1 70,230" fill="none"
+                                        stroke="var(--agent-secondary)" stroke-width="4"
+                                        filter="url(#hud-glow-heavy)" />
+                                </g>
+
+                                <!-- LAYER 7: Middle Intermittent Dash Ring -->
+                                <circle cx="250" cy="250" r="175" fill="none" stroke="var(--accent)" stroke-width="6"
+                                    stroke-dasharray="15, 150" stroke-opacity="0.7" class="rotate-cw-slow" />
+
+                                <!-- LAYER 6: Technical Data Labels (Repositioned) -->
+                                <g class="hud-labels" fill="var(--accent)" font-family="monospace" font-size="5"
+                                    opacity="0.5">
+                                    <text x="380" y="240">VITAL_CHECK: OK</text>
+                                    <text x="380" y="250">CORE_TEMP: 32C</text>
+                                    <text x="100" y="240">SYNC_STATUS: 100</text>
+                                    <text x="100" y="250">PROTOCOL: RAIZ</text>
+                                </g>
+
+                                <!-- LAYER 5: Inner Tech Ring -->
+                                <circle cx="250" cy="250" r="158" fill="none" class="hud-node" stroke="var(--accent)"
+                                    stroke-width="2" filter="url(#hud-glow-heavy)" />
+
+                                <!-- LAYER 4: Scanning Scanlines (Internal) -->
+                                <g class="rotate-cw" opacity="0.4">
+                                    <circle cx="250" cy="250" r="148" fill="none" stroke="var(--accent)"
+                                        stroke-width="1" stroke-dasharray="1, 8" />
+                                </g>
+
+                                <!-- LAYER 3: Core Shell (ULTIMATE EXPANSION for Absolute Containment) -->
+                                <g class="hud-core">
+                                    <circle cx="250" cy="250" r="165" fill="rgba(0,0,0,0.98)" stroke="var(--accent)"
+                                        stroke-width="3" />
+                                    <circle cx="250" cy="250" r="158" fill="none" stroke="var(--accent)"
+                                        stroke-width="1" stroke-dasharray="5, 10" stroke-opacity="0.5"
+                                        class="rotate-ccw" />
+
+                                    <!-- LAYER 2: BRANDING CENTRAL (SET TO 35) -->
+                                    <!-- LAYER 16 (NEW): Dynamic Audio Equalizer Ring (Moved up for visibility) -->
+                                    <g id="hud-equalizer" transform="translate(250, 250)">
+                                        <!-- 60 bars will be dynamically generated by JS here. -->
+                                    </g>
+
+                                    <text x="250" y="262" text-anchor="middle" fill="var(--text-white)"
+                                        stroke="var(--text-white)" stroke-width="1.2"
+                                        font-family="'Orbitron', sans-serif" font-weight="900" font-size="38"
+                                        letter-spacing="5" filter="url(#text-glow-bright)">J.A.R.V.I.S.</text>
+
+                                    <!-- Micro technical accents around text -->
+                                    <g stroke="var(--accent)" stroke-width="0.7" stroke-opacity="0.4">
+                                        <line x1="130" y1="250" x2="160" y2="250" />
+                                        <line x1="340" y1="250" x2="370" y2="250" />
+                                    </g>
+                                </g>
+
+                                <!-- LAYER 1: Deep Scanning Active Overlay -->
+                                <circle cx="250" cy="250" r="175" fill="none" stroke="white" stroke-width="2"
+                                    stroke-opacity="0.1" class="hud-scan-ring" />
+                                <circle cx="250" cy="250" r="240" fill="none" stroke="var(--accent)" stroke-width="1"
+                                    stroke-opacity="0.05" class="hud-scan-ring-outer" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="display-panel">
+                    <div class="subtitle-container">
+                        <p id="transcript" class="transcript-text">Aguardando comando...</p>
+                        <p id="response" class="response-text"></p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Floating PC Health Panel (Initially Hidden) -->
+            <div class="floating-panel" id="pc-health-floating">
+                <div class="panel-header">
+                    <span class="zeta-glow-target">SISTEMA DE MONITORAMENTO</span>
+                    <button class="close-panel" id="close-pc-panel">×</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-box">
+                        <div class="metric-label">
+                            <span>CPU USAGE</span>
+                            <span id="float-cpu-val">0%</span>
+                        </div>
+                        <div class="metric-bar">
+                            <div id="float-cpu-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">
+                            <span>RAM USAGE</span>
+                            <span id="float-ram-val">0%</span>
+                        </div>
+                        <div class="metric-bar">
+                            <div id="float-ram-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <!-- Floating Voice Rhythm Monitor Panel -->
+            <div class="floating-panel" id="voice-monitor-floating" style="width: 450px; height: 180px;">
+                <div class="panel-header">
+                    <span class="zeta-glow-target">MONITOR DE RITMO DE VOZ</span>
+                    <button class="close-panel" id="close-voice-panel">×</button>
+                </div>
+                <div class="panel-content voice-layout">
+                    <div class="voice-sidebar">
+                        <div class="metric-box">
+                            <div class="metric-label">
+                                <span>AMPLITUDE</span>
+                                <span id="float-amplitude-val">0%</span>
+                            </div>
+                            <div class="metric-bar">
+                                <div id="float-amplitude-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">
+                                <span>CADÊNCIA</span>
+                                <span id="float-cadencia-val">0%</span>
+                            </div>
+                            <div class="metric-bar">
+                                <div id="float-cadencia-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="voice-graph-container">
+                        <canvas id="voice-rhythm-graph"></canvas>
+                        <div class="graph-label zeta-glow-target">RITMO NEURAL</div>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <!-- Floating Mobile Remote Panel -->
+            <div class="floating-panel" id="mobile-remote-floating">
+                <div class="panel-header">
+                    <span class="zeta-glow-target">CONEXÃO REMOTA VIA SMARTPHONE</span>
+                    <button class="close-panel" id="close-mobile-panel">×</button>
+                </div>
+                <div class="panel-content" style="text-align: center;">
+                    <p style="font-size: 0.85rem; color: #b3b3b3; margin-bottom: 10px;">Aponte sua câmera para abrir o
+                        controle remoto e comandar o Jarvis pelo celular.</p>
+                    <div class="qr-container" style="position: relative; display: inline-block;">
+                        <canvas id="qrcode-canvas"></canvas>
+                        <button id="toggle-qr-btn" title="Ocultar/Mostrar QR Code" style="
+                            position: absolute;
+                            right: -30px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            background: var(--accent-mute);
+                            border: 1px solid var(--accent);
+                            color: var(--accent);
+                            border-radius: 4px;
+                            cursor: pointer;
+                            padding: 4px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.3s ease;
+                            z-index: 10;
+                        ">
+                            <svg id="toggle-qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="width: 16px; height: 16px;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="metric-box" style="margin-top: 15px; justify-content: center;">
+                        <span id="mobile-ip-display"
+                            style="color: var(--accent); font-family: monospace; letter-spacing: 1px;">Aguardando
+                            IP da Rede...</span>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <!-- Floating NotebookLM Brain Panel -->
+            <div class="floating-panel" id="notebook-floating"
+                style="width: 500px; height: 600px; right: 20px; bottom: 20px; left: auto; top: auto; z-index: 150;">
+                <div class="panel-header"
+                    style="background: var(--accent-mute); border-bottom: 1px solid var(--accent-mute);">
+                    <span class="zeta-glow-target">CÉREBRO DO AGENTE (NOTEBOOK LM)</span>
+                    <button class="close-panel" id="close-notebook-panel">×</button>
+                </div>
+                <div class="panel-content" style="padding: 0; padding-top: 5px; height: calc(100% - 35px);">
+                    <!-- O iframe carregará o site do NotebookLM internamente -->
+                    <iframe id="notebook-webview" src="https://notebooklm.google.com/"
+                        style="width: 100%; height: 100%; border: none; border-radius: 4px;"></iframe>
+                </div>
+            </div>
+            <!-- Floating Intelligence Servers Panel (Refined Step 3) -->
+            <div class="floating-panel" id="intelligence-panel"
+                style="width: 450px; height: 300px; right: 20px; bottom: 80px; left: auto; z-index: 150;">
+                <div class="panel-header" id="intelligence-header">
+                    <div class="header-title">
+                        <span class="zeta-glow-target">SERVIDORES DE INTELIGÊNCIA</span>
+                    </div>
+                    <div class="header-controls">
+                        <button class="close-panel" id="close-intelligence-panel">×</button>
+                    </div>
+                </div>
+                <div class="panel-content intelligence-layout" id="intelligence-content">
+                    <div class="intelligence-sidebar">
+                        <div class="api-item active" data-api="openrouter">
+                            <span class="api-status online"></span>
+                            <div class="api-info">
+                                <span class="api-name">OPENROUTER</span>
+                                <span class="api-label">ONLINE</span>
+                            </div>
+                        </div>
+                        <div class="api-item" data-api="openai">
+                            <span class="api-status online"></span>
+                            <div class="api-info">
+                                <span class="api-name">OPENAI</span>
+                                <span class="api-label">ONLINE</span>
+                            </div>
+                        </div>
+                        <div class="api-item" data-api="huggingface">
+                            <span class="api-status online"></span>
+                            <div class="api-info">
+                                <span class="api-name">HUGGINGFACE</span>
+                                <span class="api-label">ONLINE</span>
+                            </div>
+                        </div>
+                        <div class="api-item" data-api="google">
+                            <span class="api-status online"></span>
+                            <div class="api-info">
+                                <span class="api-name">GOOGLE</span>
+                                <span class="api-label">ONLINE</span>
+                            </div>
+                        </div>
+                        <div class="api-item" data-api="deepseek">
+                            <span class="api-status online"></span>
+                            <div class="api-info">
+                                <span class="api-name">DEEPSEEK</span>
+                                <span class="api-label">ONLINE</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="intelligence-graph-container">
+                        <canvas id="intelligence-graph"></canvas>
+                        <div class="graph-label zeta-glow-target">LATÊNCIA INTEGRADA (ms)</div>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <!-- Floating Access Monitoring Panel (Requested Upgrade) -->
+            <div class="floating-panel" id="access-panel-floating">
+                <div class="panel-header">
+                    <span class="zeta-glow-target">CONTROLE MOBILE</span>
+                    <button class="close-panel" id="close-access-panel">×</button>
+                </div>
+                <div class="panel-content" style="text-align: center;">
+                    <p style="font-size: 0.85rem; color: #b3b3b3; margin-bottom: 10px;">Monitoramento de acesso externo
+                        via rede local.</p>
+                    <div style="position: relative; display: inline-block; margin: 0 auto;">
+                        <div class="qr-wrapper" id="qr-blur-container">
+                            <canvas id="access-qrcode-canvas"></canvas>
+                        </div>
+                        <button id="toggle-qr-privacy" class="privacy-toggle" title="Alternar Privacidade" style="
+                            position: absolute;
+                            right: -45px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                        ">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="metric-box" style="margin-top: 15px; justify-content: center;">
+                        <span style="color: var(--accent); font-family: monospace; letter-spacing: 1px;">URL:
+                            http://10.0.0.57:500</span>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <!-- Floating Holographic Mirror Panel (FDM-3 Perfect Vision) -->
+            <div class="floating-panel" id="holographic-mirror-floating">
+                <div class="panel-header">
+                    <span class="zeta-glow-target">ESPELHAMENTO HOLOGRÁFICO</span>
+                    <button class="close-panel" id="close-mirror-panel">×</button>
+                </div>
+                <div class="panel-content">
+                    <img id="mirror-canvas" src="" alt="Screen Mirror">
+                    <div class="mirror-overlay">
+                        <div>STREAM: ACTIVE</div>
+                        <div id="mirror-stats">FPS: 2 | LATENCY: 40ms</div>
+                    </div>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+
+
+            <!-- BOTÃO DE ESCAPE DE EMERGÊNCIA (sempre por cima de tudo) -->
+            <!-- Aparece quando o Google tenta entrar em fullscreen -->
+            <div id="fullscreen-escape-overlay" style="
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                z-index: 2147483647;
+                background: transparent;
+                pointer-events: none;
+            ">
+                <button id="fullscreen-escape-btn" style="
+                    position: fixed;
+                    top: 12px;
+                    right: 12px;
+                    z-index: 2147483647;
+                    background: rgba(255, 0, 0, 0.85);
+                    color: white;
+                    border: 2px solid #ff3e3e;
+                    border-radius: 8px;
+                    padding: 10px 18px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 13px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    pointer-events: all;
+                    letter-spacing: 1px;
+                    box-shadow: 0 0 20px rgba(255,0,0,0.6);
+                    animation: pulse-red 1s ease-in-out infinite;
+                " onclick="window.__jarvisExitFullscreen()">⛌ SAIR DO FULLSCREEN</button>
+            </div>
+
+
+            <!-- INJECT_SIDEBARS_HERE -->
+
+            </main>
+        </div>
+
+        <footer>
+            <div class="protocol-info">
+                <span class="zeta-glow-target">PROTOCOLO: <span id="current-protocol">PADRÃO</span></span>
+                <span id="connection-status" class="disconnected zeta-glow-target">DESCONECTADO</span>
+            </div>
+        </footer>
+    </div>
+    <script src="background-effects.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

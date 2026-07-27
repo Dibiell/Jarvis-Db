@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>J.A.R.V.I.S. Mobile</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        :root {
+            --bg: #050505;
+            --accent: #00f2ff;
+            --accent-mute: rgba(0, 242, 255, 0.2);
+            --text: #e0e0e0;
+            --glass: rgba(20, 20, 20, 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--accent-mute);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--accent);
+            letter-spacing: 3px;
+        }
+
+        main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-content: start;
+        }
+
+        .remote-btn {
+            background: var(--glass);
+            border: 1px solid var(--accent-mute);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: var(--text);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .remote-btn:active {
+            background: var(--accent-mute);
+            transform: scale(0.95);
+        }
+
+        .remote-btn i {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .health-card {
+            grid-column: span 2;
+            background: var(--glass);
+            border: 1px solid var(--accent-mute);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .stat-bar {
+            flex: 1;
+            margin: 0 15px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stat-bar div {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.5s ease;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: var(--glass);
+            border-top: 1px solid var(--accent-mute);
+        }
+
+        #mobile-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--accent-mute);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3e3e;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-dot.online {
+            background: #00ff88;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>J.A.R.V.I.S. REMOTE</h1>
+        <div style="font-size: 0.6rem; margin-top: 5px; opacity: 0.7;">
+            <span id="status-dot" class="status-dot"></span>
+            <span id="status-text">DISCONNECTED</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="health-card">
+            <div class="stat-row">
+                <span>CPU</span>
+                <div class="stat-bar">
+                    <div id="cpu-bar" style="width: 0%"></div>
+                </div>
+                <span id="cpu-val">0%</span>
+            </div>
+            <div class="stat-row">
+                <span>RAM</span>
+                <div class="stat-bar">
+                    <div id="ram-bar" style="width: 0%"></div>
+                </div>
+                <span id="ram-val">0%</span>
+            </div>
+        </div>
+
+        <button class="remote-btn" onclick="sendCommand('vol_up')"><span>🔊</span> VOL +</button>
+        <button class="remote-btn" onclick="sendCommand('vol_down')"><span>🔉</span> VOL -</button>
+        <button class="remote-btn" onclick="sendCommand('media_play_pause')"><span>⏯️</span> PLAY</button>
+        <button class="remote-btn" onclick="sendCommand('spotify')"><span>🎵</span> SPOTIFY</button>
+        <button class="remote-btn" onclick="sendCommand('shutdown')"><span>🛑</span> SHUTDOWN</button>
+        <button class="remote-btn" onclick="sendCommand('reboot')"><span>🔄</span> REBOOT</button>
+    </main>
+
+    <div class="input-area">
+        <input type="text" id="mobile-input" placeholder="Comando de texto..." onkeypress="handleEnter(event)">
+    </div>
+
+    <script>
+        const socket = io();
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+
+        socket.on('connect', () => {
+            statusDot.className = 'status-dot online';
+            statusText.innerText = 'ONLINE';
+        });
+
+        socket.on('disconnect', () => {
+            statusDot.className = 'status-dot';
+            statusText.innerText = 'DISCONNECTED';
+        });
+
+        socket.on('pc_health', (data) => {
+            document.getElementById('cpu-bar').style.width = data.cpu + '%';
+            document.getElementById('ram-bar').style.width = data.ram + '%';
+            document.getElementById('cpu-val').innerText = Math.round(data.cpu) + '%';
+            document.getElementById('ram-val').innerText = Math.round(data.ram) + '%';
+        });
+
+        function sendCommand(cmd) {
+            socket.emit('mobile_action', { action: cmd });
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                const val = e.target.value.trim();
+                if (val) {
+                    socket.emit('text_command', { text: val });
+                    e.target.value = '';
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
