@@ -1009,8 +1009,34 @@ def aprender_fato(comando):
         memoria_atual[f"fato_{timestamp}"] = fato
         salvar_memoria(memoria_atual)
         print(f"[APRENDIZADO] Novo fato salvo: {fato}")
+        atualizar_contexto_memoria()
         return True
     return False
+
+MAX_HISTORICO_MSGS = 24
+
+def podar_historico():
+    global historico_conversa
+    if len(historico_conversa) > MAX_HISTORICO_MSGS + 1:
+        historico_conversa = [historico_conversa[0]] + historico_conversa[-MAX_HISTORICO_MSGS:]
+
+def atualizar_contexto_memoria():
+    global memoria_atual, historico_conversa
+    memoria_atual = carregar_memoria()
+    novo_contexto = "\n".join([f"- {k}: {v}" for k, v in memoria_atual.items()])
+    
+    content = historico_conversa[0]["content"]
+    start_tag = "[[MEMORIA_BASE_INICIO]]"
+    end_tag = "[[MEMORIA_BASE_FIM]]"
+    
+    start_idx = content.find(start_tag)
+    end_idx = content.find(end_tag)
+    
+    if start_idx != -1 and end_idx != -1:
+        before = content[:start_idx + len(start_tag)]
+        after = content[end_idx:]
+        historico_conversa[0]["content"] = before + novo_contexto + after
+
 
 memoria_atual = carregar_memoria()
 
@@ -1035,7 +1061,7 @@ historico_conversa = [
             "[RESTRIÇÕES TÉCNICAS]\n"
             "- Formatação: APENAS TEXTO PURO. Sem negritos, sem listas markdown, sem emojis. Use quebras de linha para clareza.\n"
             "- Brevidade: Responda no máximo com 2 frases impactantes. Vá direto ao ponto técnico ou à ação.\n\n"
-            f"Mestre: Gabriel. Memória Base: {contexto_memoria}\n"
+            f"Mestre: Gabriel. Memória Base: [[MEMORIA_BASE_INICIO]]{contexto_memoria}[[MEMORIA_BASE_FIM]]\n"
             "Status: Online e aguardando ordens, Senhor."
         )
     }
@@ -1940,6 +1966,7 @@ def consultar_ia(pergunta, salvar_no_historico=True, use_tools=True):
     
         if salvar_no_historico:
             historico_conversa.append({"role": "assistant", "content": resultado})
+            podar_historico()
             
         # --- INJEÇÃO DA FÁBRICA DE AGENTES ---
         # Só injeta se houver INTENÇÃO CLARA de criar um novo agente (evita criação acidental ao ler textos)
@@ -2652,91 +2679,7 @@ window = None
 # Absolute path to the startup batch file
 BAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'iniciar_jarvis.bat')
 
-class J_API:
-    """API Python exposta para a WebView via window.pywebview.api.* (MODO BRIDGE ATIVADO)"""
-    
-    def get_status(self):
-        """Retorna o status do sistema via ponte nativa (bypass rede)."""
-        try:
-            return {
-                "status": "CONECTADO",
-                "internet": verificar_internet(),
-                "timestamp": time.time(),
-                "mode": "NATIVO"
-            }
-        except:
-            return {"status": "ERRO_BRIDGE"}
-
-    def sync_ui(self, data):
-        """Sincroniza estado enviado da UI."""
-        return True
-
-    def toggle_fullscreen(self):
-        global window
-        if window: window.toggle_fullscreen()
-
-    def restart_jarvis(self):
-        """Reinicia o sistema de forma limpa."""
-        try:
-            subprocess.Popen(['cmd', '/c', 'start', '', BAT_FILE], shell=True)
-            global window
-            if window: window.destroy()
-        except: pass
-        finally: os._exit(0)
-
-    def close_jarvis(self):
-        global window
-        if window: window.destroy()
-        os._exit(0)
-
-    def minimize_jarvis(self):
-        global window
-        if window: window.minimize()
-
-    def smooth_move(self, target_x, target_y, duration=0.6):
-        """Move a janela suavemente (interpolação easeInOut) via Python."""
-        def _move():
-            global window
-            if not window: return
-            try:
-                start_x = window.x
-                start_y = window.y
-                # Fix para None
-                if start_x is None or start_y is None:
-                    window.move(target_x, target_y)
-                    return
-                steps = int(duration * 60)
-                delay = duration / steps
-                for i in range(1, steps + 1):
-                    t = i / steps
-                    ease_t = 4 * t * t * t if t < 0.5 else 1 - pow(-2 * t + 2, 3) / 2
-                    now_x = int(start_x + (target_x - start_x) * ease_t)
-                    now_y = int(start_y + (target_y - start_y) * ease_t)
-                    window.move(now_x, now_y)
-                    time.sleep(delay)
-            except Exception as e:
-                print(f"[SmoothMove] Erro: {e}")
-        threading.Thread(target=_move, daemon=True).start()
-
-    def set_orb_mode(self, enabled, target_x=20, target_y=20):
-        """Altera dinamicamente o tamanho da janela e move para a posição do ORB."""
-        global window
-        if not window: return
-        try:
-            if enabled:
-                window.restore() # Tira do maximize
-                window.resize(320, 320)
-                self.smooth_move(target_x, target_y, duration=0.8)
-                # Tenta manter sempre no topo (A interface fluida do Jarvis não deve ficar escondida)
-                try: window.on_top = True
-                except: pass
-            else:
-                window.resize(1200, 800)
-                try: window.on_top = False
-                except: pass
-                window.maximize()
-        except Exception as e:
-            print(f"[OrbMode] Erro ao redimensionar: {e}")
+# Removida primeira definicao de J_API duplicada
 
 def iniciar_proatividade():
     """Loop de visão proativa para ajudar o usuário automaticamente."""
@@ -2844,6 +2787,10 @@ class J_API:
         """Verifica se o servidor está online (usado pelo checkNativeBridge)."""
         return {'status': 'CONECTADO'}
 
+    def sync_ui(self, data):
+        """Sincroniza estado enviado da UI."""
+        return True
+
     def toggle_fullscreen(self):
         """Alterna entre tela cheia e janela normal."""
         try:
@@ -2885,14 +2832,50 @@ class J_API:
             # Relança o processo
             os.execv(sys.executable, [sys.executable] + sys.argv)
 
-    def smooth_move(self, x, y, duration=0.5):
-        """Move a janela suavemente para a posição (x, y)."""
-        try:
+    def smooth_move(self, target_x, target_y, duration=0.6):
+        """Move a janela suavemente (interpolação easeInOut) via Python."""
+        def _move():
             global window
-            if window:
-                window.move(int(x), int(y))
+            if not window: return
+            try:
+                start_x = window.x
+                start_y = window.y
+                # Fix para None
+                if start_x is None or start_y is None:
+                    window.move(int(target_x), int(target_y))
+                    return
+                steps = int(duration * 60)
+                delay = duration / steps
+                for i in range(1, steps + 1):
+                    t = i / steps
+                    ease_t = 4 * t * t * t if t < 0.5 else 1 - pow(-2 * t + 2, 3) / 2
+                    now_x = int(start_x + (int(target_x) - start_x) * ease_t)
+                    now_y = int(start_y + (int(target_y) - start_y) * ease_t)
+                    window.move(now_x, now_y)
+                    time.sleep(delay)
+            except Exception as e:
+                print(f"[SmoothMove] Erro: {e}")
+        threading.Thread(target=_move, daemon=True).start()
+
+    def set_orb_mode(self, enabled, target_x=20, target_y=20):
+        """Altera dinamicamente o tamanho da janela e move para a posição do ORB."""
+        global window
+        if not window: return
+        try:
+            if enabled:
+                window.restore() # Tira do maximize
+                window.resize(320, 320)
+                self.smooth_move(target_x, target_y, duration=0.8)
+                # Tenta manter sempre no topo (A interface fluida do Jarvis não deve ficar escondida)
+                try: window.on_top = True
+                except: pass
+            else:
+                window.resize(1200, 800)
+                try: window.on_top = False
+                except: pass
+                window.maximize()
         except Exception as e:
-            print(f"[J_API] Erro smooth_move: {e}")
+            print(f"[OrbMode] Erro ao redimensionar: {e}")
 
 global jarvis_api
 jarvis_api = None
