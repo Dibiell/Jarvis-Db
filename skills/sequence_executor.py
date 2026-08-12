@@ -1,3 +1,7 @@
+# DEPRECATED: substituído por brain/core.py, mantido só como referência histórica.
+# O gancho "executar_passo_a_passo" em jarvis.py agora chama brain.core.executar_comando,
+# que usa o loop observa->age->reobserva com tool calling real (LLMRouter + pywinauto/Playwright).
+# Remover este arquivo numa limpeza futura, após confirmar estabilidade do novo motor.
 """
 JARVIS SKILL: Sequence Executor
 Interpretador de ordens sequenciais "passo a passo" com auxílio de visão computacional.

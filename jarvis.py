@@ -282,7 +282,9 @@ try:
     from skills.camera_vision import ver_camera_jarvis
     from action_recorder import recorder as action_recorder_instance, listar_rotinas
     from macro_player import executar_rotina_direta, gerar_script_ia, executar_script_ia, carregar_rotina
-    from sequence_executor import executar_passo_a_passo, contexto_global
+    from brain.core import executar_comando as _executar_tarefa_multi_etapa
+    # sequence_executor importado apenas para manter contexto_global (salvar/recuperar_contexto)
+    from sequence_executor import contexto_global
     from browser_agent import pesquisar_na_web
     from navigator import pesquisar_navigator
     from terminal_agent import executar_terminal
@@ -1568,7 +1570,7 @@ AVAILABLE_FUNCTIONS = {
     "consultar_especialista": lambda nome_agente: skill_manager.skills.get(nome_agente.lower(), "Especialista não encontrado ou indisponível."),
     "ver_tela": lambda pergunta="": ver_tela_jarvis(pergunta),
     "ver_camera": lambda pergunta="": ver_camera_jarvis(pergunta),
-    "executar_passo_a_passo": lambda ordens: executar_passo_a_passo(ordens, consultar_ia),
+    "executar_passo_a_passo": lambda ordens: _executar_tarefa_multi_etapa(ordens),
     "salvar_contexto": lambda chave, valor: (contexto_global.salvar(chave, valor), f"Informação '{chave}' salva com sucesso."),
     "recuperar_contexto": lambda chave: contexto_global.recuperar(chave),
     "pesquisar_na_web": pesquisar_na_web,

@@ -3,6 +3,8 @@ pyttsx3==2.90
 PyAudio==0.2.14
 google-genai
 playwright
+pywinauto
+pyperclip
 wikipedia
 requests
 pyautogui
