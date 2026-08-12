@@ -6,8 +6,7 @@ def test_env():
     print("--- Teste de Ambiente JARVIS ---")
     tokens = [
         "HUGGINGFACE_TOKEN",
-        "OPENROUTER_API_KEY",
-        "DEEPSEEK_API_KEY"
+        "OPENROUTER_API_KEY"
     ]
     for token in tokens:
         val = os.getenv(token)

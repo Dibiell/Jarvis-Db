@@ -24,7 +24,7 @@ def is_admin():
 def check_env():
     print("\n[1/3] VERIFICANDO AMBIENTE (.env)...")
     load_dotenv()
-    tokens = ["HUGGINGFACE_TOKEN", "OPENROUTER_API_KEY", "DEEPSEEK_API_KEY"]
+    tokens = ["HUGGINGFACE_TOKEN", "OPENROUTER_API_KEY"]
     for t in tokens:
         val = os.getenv(t)
         if val:

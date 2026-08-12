@@ -1,7 +1,7 @@
 """
 JARVIS SKILL: Screen Vision (Fase 1)
 Permite que o Jarvis "veja" e descreva a tela do usuário em tempo real
-usando APIs de visão computacional (Groq Vision / OpenAI Vision).
+usando LLMRouter (Gemini pool + OpenRouter) para percepção visual e raciocínio.
 """
 
 import base64
@@ -187,14 +187,14 @@ def imagem_para_base64(image_path):
 
 def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", regiao=None):
     """
-    Captura a tela e envia para a arquitetura FDM-1 (HuggingFace Vision + DeepSeek Reasoning).
+    Captura a tela e envia para o pipeline FDM-1 via LLMRouter (Gemini/OpenRouter).
     
     Args:
         pergunta: O que o Jarvis deve observar/perguntar sobre a tela.
         regiao: Região da tela (None = full).
     
     Returns:
-        str: Descrição/análise da tela interpretada pelo DeepSeek.
+        str: Descrição/análise da tela via LLMRouter.
     """
     print("[FDM-1] Iniciando pipeline de visão avançada...")
     
@@ -211,7 +211,7 @@ def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", regiao
         # as its primary logic. This completely avoids the fragile HuggingFace Inference Client.
         resultado_visao = _analisar_tela_vision_tradicional(img_path, pergunta)
         
-        # Se DeepSeek estiver configurado, passa a visão para ele (Fase 2 de Raciocínio)
+        # Fase 2: envia a percepção visual ao llm_router para raciocínio tático (Fase 2 de Raciocínio)
         if not resultado_visao.startswith("Falha"):
             print("[FDM-1] Fase 2: Raciocínio Tático via LLMRouter...")
             prompt_fdm = (
@@ -486,7 +486,7 @@ class VisualTeacher:
                 print("[VisualTeacher] Fallback para LLMRouter (uma imagem)...")
                 resultado = ver_tela_jarvis("Descreva o que foi feito baseado nesta imagem final do processo.")
             except Exception as e:
-                print(f"[VisualTeacher] Erro no fallback Groq: {e}")
+                print(f"[VisualTeacher] Erro no fallback LLMRouter: {e}")
 
         return resultado or "Houve um erro ao processar a sequência de imagens via IA, senhor."
 

@@ -66,8 +66,7 @@ PREMIUM_MODELS = {
     "VISAO_TELA": "google/gemini-2.0-pro-exp-02-05", 
     "PESQUISA_WEB": "google/gemini-2.0-flash-001", # Flash para velocidade na web
     "CONVERSACAO": "google/gemini-2.0-pro-exp-02-05",
-    "AUTOMACAO_SISTEMA": "google/gemini-2.0-pro-exp-02-05",
-    "RACIOCINIO_PROFUNDO": "deepseek/deepseek-r1"
+    "AUTOMACAO_SISTEMA": "google/gemini-2.0-pro-exp-02-05"
 }
 
 # Clientes Globais de IA
@@ -1266,7 +1265,7 @@ def aguardar_wake_word():
 # ============================================================
 
 # ============================================================
-# DEFINIÇÃO DE TOOLS (GROQ)
+# DEFINIÇÃO DE TOOLS (usadas pelo LLMRouter)
 # ============================================================
 TOOLS = [
     {

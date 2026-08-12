@@ -1,7 +1,7 @@
 """
 JARVIS SKILL: Camera Vision
 Permite que o Jarvis "veja" e descreva o ambiente físico através da webcam
-usando OpenCV e APIs de visão computacional (Groq / OpenAI).
+usando OpenCV e LLMRouter (Gemini pool + OpenRouter) para análise visual.
 """
 
 import cv2
