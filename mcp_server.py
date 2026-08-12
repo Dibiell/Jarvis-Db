@@ -15,8 +15,6 @@ async def analyze_screen(prompt: str = "Descreva detalhadamente o que está na t
     Usa o pipeline FDM-1 para analisar um monitor específico.
     monitor_index: 1 para o principal, 2 para o secundário, etc. (0 captura todos).
     """
-    from jarvis import cliente_groq, cliente_openai, deepseek_client
-    
     # Prompt técnico inspirado pelo ScreenAI para melhor compreensão de UI
     prompt_tecnico = (
         "Analise a tela com foco em Interface de Usuário (UI).\n"
@@ -26,10 +24,7 @@ async def analyze_screen(prompt: str = "Descreva detalhadamente o que está na t
     
     print(f"[MCP] Analisando monitor {monitor_index}...")
     resultado = ver_tela_jarvis(
-        pergunta=prompt_tecnico,
-        cliente_groq=cliente_groq,
-        cliente_openai=cliente_openai,
-        deepseek_client=deepseek_client
+        pergunta=prompt_tecnico
     )
     return resultado
 

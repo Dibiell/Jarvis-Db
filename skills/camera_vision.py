@@ -53,7 +53,7 @@ def imagem_para_base64(image_path):
         print(f"[Camera] Erro ao converter imagem para base64: {e}")
         return None
 
-def ver_camera_jarvis(pergunta="O que você está vendo?", cliente_groq=None, cliente_openrouter=None, camera_index=0):
+def ver_camera_jarvis(pergunta="O que você está vendo?", camera_index=0):
     """
     Captura a câmera e envia para análise de visão.
     """
@@ -81,45 +81,21 @@ def ver_camera_jarvis(pergunta="O que você está vendo?", cliente_groq=None, cl
             ]
         }
         
-        # 1. Tenta OpenRouter Vision (Elite)
-        if cliente_openrouter:
-            try:
-                print("[Camera] Usando OpenRouter Vision (Elite)...")
-                response = cliente_openrouter.chat.completions.create(
-                    model="google/gemini-2.0-pro-exp-02-05",
-                    messages=[
-                        {"role": "system", "content": prompt_sistema},
-                        mensagem_visao
-                    ],
-                    max_tokens=1000
-                )
-                if response and response.choices and len(response.choices) > 0:
-                    resultado = response.choices[0].message.content.strip()
-                    print("[Camera] OpenRouter Vision respondeu com sucesso.")
-                else:
-                    print(f"[Camera] OpenRouter retornou estrutura vazia: {response}")
-            except Exception as e:
-                print(f"[Camera] OpenRouter Vision falhou tragicamente: {e}")
-                import traceback
-                traceback.print_exc()
-
-        # 2. Tenta Groq (Fallback)
-        if not resultado and cliente_groq:
-            try:
-                print("[Camera] Usando Groq Vision (Llama 3.2)...")
-                resposta = cliente_groq.chat.completions.create(
-                    model="llama-3.2-90b-vision-preview",
-                    messages=[
-                        {"role": "system", "content": prompt_sistema},
-                        mensagem_visao
-                    ],
-                    max_tokens=800
-                )
-                resultado = resposta.choices[0].message.content.strip()
-                print("[Camera] Groq Vision respondeu com sucesso.")
-            except Exception as e:
-                print(f"[Camera] Groq Vision falhou: {e}")
-                
+        from brain.llm.router import router as llm_router
+        try:
+            print("[Camera] Enviando imagem para o LLMRouter...")
+            messages = [{"role": "system", "content": prompt_sistema}, mensagem_visao]
+            resposta = llm_router.chat(messages=messages)
+            resultado = resposta.get("text", "")
+            if resultado:
+                print("[Camera] LLMRouter respondeu com sucesso.")
+            else:
+                print("[Camera] LLMRouter retornou vazio.")
+                resultado = None
+        except Exception as e:
+            print(f"[Camera] LLMRouter falhou na visão: {e}")
+            resultado = None
+            
         return resultado or "Estou vendo a imagem da sua câmera, mas meus módulos de análise falharam, Senhor."
         
     finally:

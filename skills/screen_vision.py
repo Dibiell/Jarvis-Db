@@ -185,15 +185,13 @@ def imagem_para_base64(image_path):
 # ANÁLISE DE TELA (VISÃO IA)
 # ============================================================
 
-def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", cliente_groq=None, regiao=None, deepseek_client=None, cliente_openrouter=None):
+def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", regiao=None):
     """
     Captura a tela e envia para a arquitetura FDM-1 (HuggingFace Vision + DeepSeek Reasoning).
     
     Args:
         pergunta: O que o Jarvis deve observar/perguntar sobre a tela.
-        cliente_groq: Fallback Groq (Vision).
         regiao: Região da tela (None = full).
-        deepseek_client: Cliente para a API DeepSeek (Reasoning).
     
     Returns:
         str: Descrição/análise da tela interpretada pelo DeepSeek.
@@ -207,15 +205,15 @@ def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", client
     
     try:
         # Bypassing HuggingFace and directly using the robust OpenRouter/Traditional Vision pipeline
-        print("[FDM-1] Fase 1: Percepção Visual (OpenRouter/Gemini Elite)...")
+        print("[FDM-1] Fase 1: Percepção Visual via LLMRouter...")
         
         # We explicitly call the traditional fallback because it has been upgraded to use OpenRouter
         # as its primary logic. This completely avoids the fragile HuggingFace Inference Client.
-        resultado_visao = _analisar_tela_vision_tradicional(img_path, pergunta, cliente_groq, cliente_openrouter=cliente_openrouter)
+        resultado_visao = _analisar_tela_vision_tradicional(img_path, pergunta)
         
         # Se DeepSeek estiver configurado, passa a visão para ele (Fase 2 de Raciocínio)
-        if deepseek_client and not resultado_visao.startswith("Falha"):
-            print("[FDM-1] Fase 2: Raciocínio Tático (DeepSeek)...")
+        if not resultado_visao.startswith("Falha"):
+            print("[FDM-1] Fase 2: Raciocínio Tático via LLMRouter...")
             prompt_fdm = (
                 "Você é o núcleo de raciocínio FDM-1 do J.A.R.V.I.S.\n"
                 "Aqui está a descrição visual inicial da tela:\n"
@@ -224,13 +222,11 @@ def analisar_tela(pergunta="Descreva detalhadamente o que está na tela", client
                 "Sua tarefa: Interprete a visão e responda ao usuário de forma inteligente. "
                 "Se for um pedido de automação, detalhe os próximos passos. Responda em Português do Brasil de forma concisa."
             )
+            from brain.llm.router import router as llm_router
             try:
-                resposta = deepseek_client.chat.completions.create(
-                    model="deepseek/deepseek-chat",
-                    messages=[{"role": "user", "content": prompt_fdm}],
-                    max_tokens=1000
-                )
-                return resposta.choices[0].message.content.strip()
+                resposta = llm_router.chat(messages=[{"role": "user", "content": prompt_fdm}])
+                if resposta.get("text"):
+                    return resposta["text"].strip()
             except Exception as e:
                 print(f"[FDM-1] Raciocínio Profundo Falhou. Usando resposta visual direta. ({e})")
         
@@ -269,8 +265,8 @@ def analisar_tela_huggingface(img_path, prompt="Describe the image"):
         print(f"[Hugin] Erro na API HuggingFace: {e}")
         return f"Erro na análise visual: {e}"
 
-def _analisar_tela_vision_tradicional(img_path, pergunta, cliente_groq, cliente_openrouter=None):
-    """Fallback: Método original de análise via Groq Vision."""
+def _analisar_tela_vision_tradicional(img_path, pergunta):
+    """Fallback: Método original de análise via LLMRouter."""
     # (Movemos a lógica original de analisar_tela para cá)
     try:
         img_b64 = imagem_para_base64(img_path)
@@ -300,62 +296,24 @@ def _analisar_tela_vision_tradicional(img_path, pergunta, cliente_groq, cliente_
         
         resultado = None
         
-        # 4a. Tenta OpenRouter Vision (Módulo Elite - Estável)
-        if (cliente_openrouter):
-             try:
-                 print("[Vision] Usando OpenRouter Vision (Elite)...")
-                 # Usando o modelo Vision mais potente do Google via OpenRouter
-                 model_vision = os.getenv("VISION_MODEL_OVERRIDE", "google/gemini-2.0-pro-exp-02-05")
-                 response = cliente_openrouter.chat.completions.create(
-                     model=model_vision,
-                     messages=[
-                         {
-                             "role": "user",
-                             "content": [
-                                 {"type": "text", "text": pergunta},
-                                 {
-                                     "type": "image_url",
-                                     "image_url": {
-                                         "url": f"data:image/png;base64,{img_b64}"
-                                     },
-                                 },
-                             ],
-                         }
-                     ],
-                     max_tokens=1000
-                 )
-                 
-                 # Extração segura da resposta
-                 if response and response.choices and len(response.choices) > 0:
-                     resultado = response.choices[0].message.content.strip()
-                     print("[Vision] OpenRouter Vision respondeu com sucesso.")
-                 else:
-                     print(f"[Vision] OpenRouter retornou estrutura vazia: {response}")
-                     
-             except Exception as e:
-                 print(f"[Vision] OpenRouter Vision falhou tragicamente: {e}")
-                 import traceback
-                 traceback.print_exc()
-
-        # 4b. Tenta Groq Vision (Fallback)
-        if cliente_groq and not resultado:
-            try:
-                print("[Vision] Usando Groq Vision (Llama 3.2 90B)...")
-                resposta = cliente_groq.chat.completions.create(
-                    model="llama-3.2-90b-vision-preview", # Modelo atualizado e suportado
-                    messages=[
-                        {"role": "system", "content": prompt_sistema},
-                        mensagem_visao
-                    ],
-                    max_tokens=800,
-                    temperature=0.4
-                )
-                resultado = resposta.choices[0].message.content.strip()
-                print("[Vision] Groq Vision respondeu com sucesso.")
-            except Exception as e:
-                print(f"[Vision] Groq Vision falhou: {e}. Tentando fallback...")
+        from brain.llm.router import router as llm_router
+        try:
+            print("[Vision] Usando LLMRouter Vision...")
+            resposta = llm_router.chat(messages=[
+                {"role": "system", "content": prompt_sistema},
+                mensagem_visao
+            ])
+            resultado = resposta.get("text", "")
+            if resultado:
+                print("[Vision] LLMRouter Vision respondeu com sucesso.")
+            else:
+                print("[Vision] LLMRouter retornou estrutura vazia.")
+                resultado = None
+        except Exception as e:
+            print(f"[Vision] LLMRouter Vision falhou tragicamente: {e}")
+            resultado = None
         
-        # 4c. Fallback final: OCR com pytesseract
+        # Fallback final: OCR com pytesseract
         if not resultado:
             resultado = _fallback_ocr(img_path)
         
@@ -466,7 +424,7 @@ class VisualTeacher:
         num_fotos = len(self.screenshots)
         return f"Sessão de ensino finalizada. Capturei {num_fotos} imagens da sua tela para análise."
 
-    def analisar_aprendizado(self, cliente_groq, deepseek_client=None):
+    def analisar_aprendizado(self):
         """
         Envia a sequência de imagens para a IA para extrair a lógica e identificar anomalias.
         """
@@ -506,34 +464,27 @@ class VisualTeacher:
         mensagem_visao = {"role": "user", "content": conteudo}
         
         resultado = None
-        # O pipeline FDM-1 (HuggingFace + DeepSeek) é o padrão ouro para sequências
-        if deepseek_client and hf_client:
-            try:
-                print("[VisualTeacher] Usando Pipeline FDM-1 (HF + DeepSeek)...")
-                # Analisa o quadro mais representativo (geralmente o último ou o principal)
-                estudo_caso = self.screenshots[-1] if self.screenshots else None
-                if estudo_caso:
-                    descricao_visual = analisar_tela_huggingface(estudo_caso, "Describe the actions performed in this screen sequence.")
-                    prompt_aprendizado = (
-                        "Você é o instrutor FDM-1.\n"
-                        f"Descrição visual da tarefa: {descricao_visual}\n"
-                        "Gere um relatório estruturado de aprendizado em Português."
-                    )
-                    resposta = deepseek_client.chat.completions.create(
-                        model="deepseek-v3.1:671b-cloud",
-                        messages=[{"role": "user", "content": prompt_aprendizado}],
-                        max_tokens=1500
-                    )
-                    resultado = resposta.choices[0].message.content.strip()
-            except Exception as e:
-                print(f"[VisualTeacher] Erro no Pipeline FDM-1: {e}")
+        from brain.llm.router import router as llm_router
+        try:
+            print("[VisualTeacher] Usando Pipeline FDM-1 via LLMRouter...")
+            estudo_caso = self.screenshots[-1] if self.screenshots else None
+            if estudo_caso:
+                descricao_visual = analisar_tela_huggingface(estudo_caso, "Describe the actions performed in this screen sequence.")
+                prompt_aprendizado = (
+                    "Você é o instrutor FDM-1.\n"
+                    f"Descrição visual da tarefa: {descricao_visual}\n"
+                    "Gere um relatório estruturado de aprendizado em Português."
+                )
+                resposta = llm_router.chat(messages=[{"role": "user", "content": prompt_aprendizado}])
+                resultado = resposta.get("text", "")
+        except Exception as e:
+            print(f"[VisualTeacher] Erro no Pipeline FDM-1: {e}")
+            resultado = None
 
-        if not resultado and cliente_groq:
-            # Fallback para Groq (pode exigir loop se não suportar multi-imagem nativamente em um único request)
+        if not resultado:
             try:
-                print("[VisualTeacher] Fallback para Groq...")
-                # Por simplicidade, analisa o frame final se multi-img falhar
-                resultado = ver_tela_jarvis("Descreva o que foi feito baseado nesta imagem final do processo.", cliente_groq)
+                print("[VisualTeacher] Fallback para LLMRouter (uma imagem)...")
+                resultado = ver_tela_jarvis("Descreva o que foi feito baseado nesta imagem final do processo.")
             except Exception as e:
                 print(f"[VisualTeacher] Erro no fallback Groq: {e}")
 
@@ -544,7 +495,7 @@ class VisualTeacher:
 # FUNÇÃO DE CONVENIÊNCIA (chamada pelo Jarvis)
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-def ver_tela_jarvis(pergunta=None, cliente_groq=None, deepseek_client=None, cliente_openrouter=None):
+def ver_tela_jarvis(pergunta=None):
     """
     Interface principal para o Jarvis chamar o sistema de visão (FDM-1).
     Extrai o contexto da pergunta e analisa a tela.
@@ -553,8 +504,5 @@ def ver_tela_jarvis(pergunta=None, cliente_groq=None, deepseek_client=None, clie
         pergunta = "Descreva tudo que está visível na tela: aplicativos abertos, conteúdo, textos, janelas ativas."
     
     return analisar_tela(
-        pergunta=pergunta,
-        cliente_groq=cliente_groq,
-        deepseek_client=deepseek_client,
-        cliente_openrouter=cliente_openrouter
+        pergunta=pergunta
     )

@@ -34,7 +34,6 @@ try:
     import socket
     from huggingface_hub import InferenceClient
     import psutil
-    from groq import Groq
     from openai import OpenAI
     from anthropic import Anthropic
     import pyperclip
@@ -73,11 +72,8 @@ PREMIUM_MODELS = {
 
 # Clientes Globais de IA
 cliente_openrouter = None
-cliente_groq = None
 openai_client = None
 anthropic_client = None
-deepseek_client = None
-cliente_ollama = None
 
 # Configurações do HuggingFace (Módulo Hugin)
 HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
@@ -767,18 +763,10 @@ def atualizar_ui(status, texto_usuario=None, texto_jarvis=None):
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
-# Escolha o provedor de IA: "openrouter" (Elite), "deepseek", "groq" ou "ollama"
+# Escolha o provedor de IA: "openrouter" (Elite)
 IA_PROVEDOR = "openrouter"
-OLLAMA_MODEL = "llama3.2:3b"
-GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # --- Chaves de API ---
-# --- Chaves de API ---
-# Groq desativado a pedido do usuário
-cliente_groq = None
-print("[AVISO] Modulo de IA (Groq) desativado.")
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
@@ -804,7 +792,7 @@ def verificar_integridade_sistema():
     # 2. Verificação de Módulos Críticos
     modulos = [
         "mss", "mcp", "huggingface_hub", "pyautogui", "PIL", 
-        "groq", "webview", "flask", "flask_socketio",
+        "webview", "flask", "flask_socketio",
         "psutil", "pyperclip", "edge_tts", "speech_recognition"
     ]
     import sys
@@ -915,25 +903,6 @@ def disable_quick_edit():
 # INICIALIZAÇÃO DOS CLIENTES DE IA
 # ============================================================
 
-# Cliente DeepSeek via OpenRouter (FDM-1 Engine Elite)
-deepseek_client = None
-if OPENROUTER_API_KEY:
-    try:
-        # FDM-1 agora centralizado no OpenRouter para maior estabilidade e acesso a modelos R1
-        deepseek_client = OpenAI(
-            api_key=OPENROUTER_API_KEY, 
-            base_url="https://openrouter.ai/api/v1",
-            default_headers={
-                "HTTP-Referer": "https://github.com/souzx/jarvis-assistant",
-                "X-Title": "JARVIS Elite FDM-1",
-            }
-        )
-        print("[OK] Modulo FDM-1 (OpenRouter Engine) pronto.")
-    except Exception as e:
-        print(f"[AVISO] FDM-1 não inicializado via OpenRouter: {e}")
-else:
-    print("[AVISO] Modulo FDM-1 aguardando OpenRouter API Key.")
-
 # Cliente OpenAI (GPT-4o / GPT-5)
 openai_client = None
 if OPENAI_API_KEY and not OPENAI_API_KEY.startswith("sk-placeholder"):
@@ -952,14 +921,7 @@ if ANTHROPIC_API_KEY and not ANTHROPIC_API_KEY.startswith("sk-ant-placeholder"):
     except Exception as e:
         print(f"[AVISO] Anthropic não inicializado: {e}")
 
-# Cliente Ollama (Sempre tenta inicializar o import)
-cliente_ollama = None
-try:
-    import ollama
-    cliente_ollama = ollama
-    print(f"[OK] Modulo de IA (Ollama) pronto localmente.")
-except Exception as e:
-    print(f"[AVISO] Ollama não inicializado: {e}")
+
 
 # Cliente OpenRouter (Poder do Oponente)
 if OPENROUTER_API_KEY:
@@ -1238,26 +1200,9 @@ def ouvir(timeout=3, frase_limite=15):
                         atualizar_ui('thinking', texto_usuario=texto_falado)
                         return texto_falado.lower()
                     except Exception as e:
-                        print(f"[AVISO] Falha no Whisper da OpenAI: {e}. Tentando Groq.", flush=True)
-                        
-                # 2. Transcreve usando Groq Whisper
-                if cliente_groq:
-                    try:
-                        with open(tmp_path, "rb") as audio_file:
-                            transcription = cliente_groq.audio.transcriptions.create(
-                                file=(tmp_path, audio_file.read()),
-                                model="whisper-large-v3",
-                                language="pt",
-                                response_format="text"
-                            )
-                        # Atualiza UI com o que entendeu ANTES de consultar a IA
-                        texto_falado = transcription.strip()
-                        atualizar_ui('thinking', texto_usuario=texto_falado)
-                        return texto_falado.lower()
-                    except Exception as e:
-                        print(f"[AVISO] Falha no Whisper da Groq: {e}. Usando Google Fallback.", flush=True)
+                        print(f"[AVISO] Falha no Whisper da OpenAI: {e}. Usando Google Fallback.", flush=True)
                 
-                # Fallback para Google Recognition se Groq falhar
+                # Fallback para Google Recognition se OpenAI falhar
                 print("[AVISO] Fallback para Google...", flush=True)
                 texto = r.recognize_google(audio, language='pt-BR')
                 atualizar_ui('thinking', texto_usuario=texto)
@@ -1622,15 +1567,15 @@ AVAILABLE_FUNCTIONS = {
     "listar_projetos": listar_projetos,
     "automatizar_mouse_teclado": lambda comandos_pyautogui: _executar_automacao_mouse_teclado(comandos_pyautogui),
     "consultar_especialista": lambda nome_agente: skill_manager.skills.get(nome_agente.lower(), "Especialista não encontrado ou indisponível."),
-    "ver_tela": lambda pergunta="": ver_tela_jarvis(pergunta, cliente_groq=cliente_groq, cliente_openrouter=cliente_openrouter),
-    "ver_camera": lambda pergunta="": ver_camera_jarvis(pergunta, cliente_groq=cliente_groq, cliente_openrouter=cliente_openrouter),
-    "executar_passo_a_passo": lambda ordens: executar_passo_a_passo(ordens, consultar_ia, cliente_groq, deepseek_client),
+    "ver_tela": lambda pergunta="": ver_tela_jarvis(pergunta),
+    "ver_camera": lambda pergunta="": ver_camera_jarvis(pergunta),
+    "executar_passo_a_passo": lambda ordens: executar_passo_a_passo(ordens, consultar_ia),
     "salvar_contexto": lambda chave, valor: (contexto_global.salvar(chave, valor), f"Informação '{chave}' salva com sucesso."),
     "recuperar_contexto": lambda chave: contexto_global.recuperar(chave),
     "pesquisar_na_web": pesquisar_na_web,
     "iniciar_protocolo_aprendizado": lambda intervalo_segundos=1.0: visual_teacher.iniciar_sessao(intervalo_segundos),
     "parar_protocolo_aprendizado": lambda: visual_teacher.parar_sessao(),
-    "analisar_protocolo_aprendizado": lambda: visual_teacher.analisar_aprendizado(cliente_groq, deepseek_client),
+    "analisar_protocolo_aprendizado": lambda: visual_teacher.analisar_aprendizado(),
     "indexar_documentos_locais": lambda: rag_service.indexar_documentos(),
     "consultar_conhecimento_local": lambda pergunta: rag_service.consultar_conhecimento(pergunta),
     "pesquisa_deep_dive": lambda tema: _executar_pesquisa_deep_dive(tema),
@@ -1697,136 +1642,70 @@ def _executar_automacao_mouse_teclado(comandos):
             
     return "Automação via mouse/teclado concluída com sucesso no PC do usuário.\n" + "\n".join(resultado_log)
 
-def _chamar_provedor_ia_global(messages_input, provider=None, use_tools=True):
-    """Helper interno para chamar o provedor de IA configurado ou fallback."""
-    global IA_PROVEDOR
-    provider_temp = provider if provider else IA_PROVEDOR
-    texto_resposta = None
+def _chamar_provedor_ia_core(messages_input, provider=None, use_tools=True):
+    """Motor de Execução Unificado usando LLMRouter."""
+    from brain.llm.router import router as llm_router
     
-    # Clona a lista para não poluir o histórico global com objetos nativos de Tool Calling (evita crash na próxima rodada)
+    # Clona a lista para não poluir o histórico global
     messages = list(messages_input)
 
-    global SISTEMA_ONLINE
-    
-    # Sensor de Conectividade (Failover Automático com Carência)
-    status_atual = verificar_internet()
-    
-    print(f"[IA DEBUG] Provedor: {IA_PROVEDOR}, Online: {status_atual}, GroqReady: {cliente_groq is not None}")
-
-    # Define o modelo com base no status
-    modelo_ativo = "deepseek/deepseek-chat" if status_atual != "offline" else OLLAMA_MODEL
-
     try:
-        # --- MOTOR DE EXECUÇÃO UNIFICADO (COM FALLBACKS) ---
-        def _tentar_chamada_cloud(client, model_name, is_groq=False, use_tools=use_tools):
-            nonlocal messages
-            try:
-                print(f"[IA] Usando {model_name}...")
-                
-                # Loop de Tool Calling (máx 5 rodadas)
-                for rodada in range(5):
-                    # Chamada com ou sem tools
-                    params = {
-                        "model": model_name,
-                        "messages": messages
-                    }
-                    if use_tools:
-                        params["tools"] = TOOLS
-                        params["tool_choice"] = "auto"
-
-                    resposta = client.chat.completions.create(**params)
+        # Loop de Tool Calling (máx 5 rodadas)
+        for rodada in range(5):
+            resultado = llm_router.chat(messages=messages, tools=TOOLS if use_tools else None)
+            
+            print(f"[IA] Usando {resultado.get('provider', 'Router')}...")
+            
+            if resultado.get("tool_calls"):
+                # Reconstrói no formato OpenAI para o histórico
+                tool_calls_dict = []
+                for tc in resultado["tool_calls"]:
+                    tool_calls_dict.append({
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": json.dumps(tc["arguments"]) if isinstance(tc["arguments"], dict) else tc["arguments"]
+                        }
+                    })
                     
-                    response_message = resposta.choices[0].message
-                    if response_message.tool_calls:
-                        # [CORREÇÃO CRÍTICA]: Adicionar como DICT, não como objeto nativo
-                        tool_calls_dict = []
-                        for tc in response_message.tool_calls:
-                            tool_calls_dict.append({
-                                "id": tc.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tc.function.name,
-                                    "arguments": tc.function.arguments
-                                }
+                messages.append({
+                    "role": "assistant",
+                    "content": resultado.get("text") or "",
+                    "tool_calls": tool_calls_dict
+                })
+                
+                for tool_call in resultado["tool_calls"]:
+                    function_name = tool_call["name"]
+                    function_to_call = AVAILABLE_FUNCTIONS.get(function_name)
+                    if function_to_call:
+                        try:
+                            function_args = tool_call["arguments"]
+                            if isinstance(function_args, str):
+                                function_args = json.loads(function_args)
+                            print(f"[Tool Calling] Router executando: {function_name}", flush=True)
+                            atualizar_ui('thinking')
+                            function_response = function_to_call(**function_args)
+                            messages.append({
+                                "tool_call_id": tool_call["id"],
+                                "role": "tool",
+                                "name": function_name,
+                                "content": str(function_response),
                             })
-                            
-                        messages.append({
-                            "role": "assistant",
-                            "content": response_message.content,
-                            "tool_calls": tool_calls_dict
-                        })
-                        
-                        for tool_call in response_message.tool_calls:
-                            function_name = tool_call.function.name
-                            function_to_call = AVAILABLE_FUNCTIONS.get(function_name)
-                            if function_to_call:
-                                try:
-                                    function_args = json.loads(tool_call.function.arguments)
-                                    print(f"[Tool Calling] {model_name} executando: {function_name}", flush=True)
-                                    atualizar_ui('thinking')
-                                    function_response = function_to_call(**function_args)
-                                    messages.append({
-                                        "tool_call_id": tool_call.id,
-                                        "role": "tool",
-                                        "name": function_name,
-                                        "content": str(function_response),
-                                    })
-                                except Exception as e_tool:
-                                    print(f"[Erro Tool] {e_tool}")
-                                    messages.append({
-                                        "tool_call_id": tool_call.id,
-                                        "role": "tool",
-                                        "name": function_name,
-                                        "content": f"Erro na execução da ferramenta: {e_tool}",
-                                    })
-                        # Continua o loop para a IA processar o resultado da ferramenta (nova chamada à API)
-                        continue
-                    else:
-                        return response_message.content.strip() if response_message.content else "Ação concluída."
-            except Exception as e:
-                print(f"[AVISO] Falha no {model_name}: {e}")
-                return None
-
-        # ESTRATÉGIA DE ROTEAMENTO (REQUISITO GABRIEL)
-        # ESTRATÉGIA DE ROTEAMENTO (RESPEITA IA_PROVEDOR)
-        texto_resposta = None
-        
-        # 1. Tenta o Provedor Preferencial primeiro (Prioridade OpenRouter Elite)
-        print(f"[IA ROTEADOR] Provedor Atual: {IA_PROVEDOR}")
-        
-        if IA_PROVEDOR == "openrouter" and cliente_openrouter:
-            texto_resposta = _tentar_chamada_cloud(cliente_openrouter, PREMIUM_MODELS.get("CONVERSACAO", "meta-llama/llama-3.1-70b-instruct"), use_tools=use_tools)
-        
-        # Fallbacks e outros provedores
-        if not texto_resposta:
-            if IA_PROVEDOR == "deepseek" and deepseek_client and SISTEMA_ONLINE:
-                texto_resposta = _tentar_chamada_cloud(deepseek_client, "deepseek-chat", use_tools=use_tools)
-            elif IA_PROVEDOR == "groq" and cliente_groq and SISTEMA_ONLINE:
-                texto_resposta = _tentar_chamada_cloud(cliente_groq, GROQ_MODEL, is_groq=True, use_tools=use_tools)
-            
-        print(f"[IA ROTEADOR] Resposta Provedor: {'OK' if texto_resposta else 'FALHA'}")
-            
-        # 2. Resiliência Total
-        if not texto_resposta and status_atual != "offline":
-            print("[IA ROTEADOR] Tentando fallbacks de emergência...")
-            # Tenta OpenRouter se não foi o preferencial
-            if IA_PROVEDOR != "openrouter" and cliente_openrouter:
-                texto_resposta = _tentar_chamada_cloud(cliente_openrouter, PREMIUM_MODELS.get("CONVERSACAO"), use_tools=use_tools)
-            
-            # Fallback local/offline (Modo Raiz Inquebrável)
-        if not texto_resposta and status_atual == "offline":
-            print("[IA ROTEADOR] Queda Critica Confirmada. Usando Inteligência Local (Ollama).")
-            if cliente_ollama:
-                try:
-                    print(f"[IA] Invocando Ollama Local ({OLLAMA_MODEL})...")
-                    resposta = cliente_ollama.chat(model=OLLAMA_MODEL, messages=messages)
-                    texto_resposta = resposta['message']['content'].strip()
-                except Exception as e:
-                    print(f"[ERRO OLLAMA] {e}")
-        
-        return texto_resposta
+                        except Exception as e_tool:
+                            print(f"[Erro Tool] {e_tool}")
+                            messages.append({
+                                "tool_call_id": tool_call["id"],
+                                "role": "tool",
+                                "name": function_name,
+                                "content": f"Erro na execução da ferramenta: {e_tool}",
+                            })
+                # Continua o loop para a IA processar o resultado da ferramenta (nova chamada à API)
+                continue
+            else:
+                return resultado.get("text", "Ação concluída.")
     except Exception as e:
-        print(f"[ERRO _chamar_provedor_ia_global] {e}")
+        print(f"[ERRO _chamar_provedor_ia_core] {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -1850,7 +1729,7 @@ def classificar_intencao(pergunta):
     # Usa um modelo rápido para classificação
     try:
         mensagens = [{"role": "system", "content": "Responda apenas com 'realtime' ou 'general'."}, {"role": "user", "content": prompt_classifier}]
-        classe = _chamar_provedor_ia_core(mensagens, provider="groq", use_tools=False)
+        classe = _chamar_provedor_ia_core(mensagens, use_tools=False)
         if classe:
             classe = classe.lower().strip()
             print(f"[NÚCLEO FDM-1] Intenção detectada: {classe}")
@@ -1858,21 +1737,6 @@ def classificar_intencao(pergunta):
     except:
         pass
     return "general"
-
-def _chamar_provedor_ia_core(messages_input, provider=None, use_tools=True):
-    """Encaminha para o provedor configurado com suporte a Rotação de Chaves (Poder do Oponente)."""
-    global GROQ_API_KEY, cliente_groq
-    
-    provedor_alvo = provider if provider else IA_PROVEDOR
-    texto_resposta = None
-    
-    # 1. Groq (DESATIVADO)
-    if provedor_alvo == "groq":
-        print("[IA] Groq solicitado, mas está desativado. Usando fallback...")
-        provedor_alvo = "openrouter" # Fallback automático
-    
-    # Fallback para o roteador global original se o Groq falhar ou não for o alvo
-    return _chamar_provedor_ia_global(messages_input, provider=provedor_alvo, use_tools=use_tools)
 
 def consultar_ia(pergunta, salvar_no_historico=True, use_tools=True):
     """Consulta a IA com suporte a Colaboração Multi-Agente (Swarm) e Tools."""
@@ -1924,7 +1788,7 @@ def consultar_ia(pergunta, salvar_no_historico=True, use_tools=True):
             
             # Supervisor Inicial (Jarvis define o plano)
             plano_prompt = f"O usuário solicitou: {pergunta}\nAgentes disponíveis: {', '.join(skills_detectadas)}.\nDefina a ordem ideal e o que cada um deve fazer brevemente."
-            plano = _chamar_provedor_ia_core([{"role": "system", "content": "Você é o Supervisor do Conselho (Jarvis)."}, {"role": "user", "content": plano_prompt}], provider="groq", use_tools=use_tools)
+            plano = _chamar_provedor_ia_core([{"role": "system", "content": "Você é o Supervisor do Conselho (Jarvis)."}, {"role": "user", "content": plano_prompt}], use_tools=use_tools)
             print(f"[Supervisão] Plano: {plano[:100]}...")
 
             for i, s_name in enumerate(skills_detectadas):
@@ -1942,7 +1806,7 @@ def consultar_ia(pergunta, salvar_no_historico=True, use_tools=True):
                     {"role": "user", "content": prompt_agente}
                 ]
                 
-                passo_resultado = _chamar_provedor_ia_core(messages, provider="groq", use_tools=use_tools)
+                passo_resultado = _chamar_provedor_ia_core(messages, use_tools=use_tools)
                 
                 if passo_resultado:
                     atividades_concluidas.append(f"[{s_name.upper()}]: {passo_resultado}")
@@ -1951,7 +1815,7 @@ def consultar_ia(pergunta, salvar_no_historico=True, use_tools=True):
             # REVISOR FINAL (Garante consistência)
             print("[Conselho] Jarvis realizando revisão final...")
             revisao_prompt = f"Revise todas as contribuições e entregue a resposta final unificada para o usuário.\nContribuições:\n{resultado_final}"
-            resultado = _chamar_provedor_ia_core([{"role": "system", "content": "Você é o Jarvis, revisor final do conselho."}, {"role": "user", "content": revisao_prompt}], provider="groq", use_tools=use_tools)
+            resultado = _chamar_provedor_ia_core([{"role": "system", "content": "Você é o Jarvis, revisor final do conselho."}, {"role": "user", "content": revisao_prompt}], use_tools=use_tools)
             
             socketio.emit('state_change', {'state': 'speaking', 'agent': 'jarvis'})
     
@@ -2404,9 +2268,7 @@ def processar_comando(comando):
             pergunta_tela = "Descreva tudo que está visível na tela: aplicativos abertos, conteúdo, textos, janelas ativas."
         
         resultado_visao = ver_tela_jarvis(
-            pergunta=pergunta_tela,
-            cliente_groq=cliente_groq,
-            deepseek_client=deepseek_client
+            pergunta=pergunta_tela
         )
         falar(resultado_visao)
         return True
@@ -2419,7 +2281,7 @@ def processar_comando(comando):
         falar("Ativando protocolos ópticos. Um momento, senhor.")
         pergunta_cam = cmd_lower
         for t in TRIGGERS_CAMERA: pergunta_cam = pergunta_cam.replace(t, "").strip()
-        res = ver_camera_jarvis(pergunta_cam if pergunta_cam else "Descreva o que vê", cliente_groq)
+        res = ver_camera_jarvis(pergunta_cam if pergunta_cam else "Descreva o que vê")
         falar(res)
         return True
 
@@ -2475,7 +2337,7 @@ def processar_comando(comando):
         falar("Iniciando a análise multimodal para extrair a nova habilidade, senhor. Um momento.")
         atualizar_ui('thinking')
         
-        resultado = visual_teacher_instance.analisar_aprendizado(cliente_groq, deepseek_client=deepseek_client)
+        resultado = visual_teacher_instance.analisar_aprendizado()
         
         if resultado:
              # Salva o aprendizado visual no fire_knowledge
@@ -2695,7 +2557,7 @@ def iniciar_proatividade():
                     
                     # Pergunta para a IA se ela vê algo que exija ajuda proativa
                     msg = "Analise a tela do usuário. Se você ver um erro técnico, um problema de produtividade ou uma oportunidade de ajudar, envie uma frase curta de ajuda. Se tudo estiver normal, responda apenas 'OK'."
-                    analise = ver_tela_jarvis(msg, cliente_groq) # Re-usa o vision handler
+                    analise = ver_tela_jarvis(msg) # Re-usa o vision handler
                     
                     if analise and "OK" not in analise.upper():
                         falar(f"Senhor, notei algo na sua tela: {analise}")

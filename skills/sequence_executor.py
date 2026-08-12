@@ -27,7 +27,7 @@ class ContextoAgente:
 
 contexto_global = ContextoAgente()
 
-def executar_passo_a_passo(ordens, consultar_ia_func, cliente_groq=None, deepseek_client=None):
+def executar_passo_a_passo(ordens, consultar_ia_func):
     """
     Executa uma lista de ordens sequenciais.
     
@@ -79,7 +79,7 @@ def executar_passo_a_passo(ordens, consultar_ia_func, cliente_groq=None, deepsee
             elif tipo == "clicar":
                 # Tenta localizar o elemento visualmente
                 print(f"[Executor] Tentando localizar '{valor}' na tela...")
-                analise = ver_tela_jarvis(f"Quais são as coordenadas (x, y) aproximadas do elemento ou texto '{valor}'? Responda no formato (x, y) apenas.", cliente_groq, deepseek_client)
+                analise = ver_tela_jarvis(f"Quais são as coordenadas (x, y) aproximadas do elemento ou texto '{valor}'? Responda no formato (x, y) apenas.")
                 
                 # Extrai coordenadas simples (x, y) da string
                 import re
