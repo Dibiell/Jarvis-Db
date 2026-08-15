@@ -83,19 +83,33 @@ hf_client = InferenceClient(token=HUGGINGFACE_TOKEN) if HUGGINGFACE_TOKEN else N
 # ============================================================
 def re_launch_as_admin():
     """Tenta relançar o script com permissões de administrador se necessário."""
+    if os.getenv("JARVIS_SKIP_AUTO_ELEVATE", "").lower() in ("1", "true", "sim"):
+        print("[SISTEMA] Auto-elevação pulada (JARVIS_SKIP_AUTO_ELEVATE ativo).", flush=True)
+        return
+
     try:
         is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
         if not is_admin:
             print("[SISTEMA] Permissões insuficientes. Solicitando elevação...", flush=True)
-            # Tenta relançar usando ShellExecute com 'runas'
-            # sys.executable é o caminho do python.exe
-            # sys.argv são os argumentos (incluindo o caminho do jarvis.py)
             script = os.path.abspath(sys.argv[0])
             params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
-            sys.exit(0)
+            pasta_projeto = os.path.dirname(script)  # <- NOVO: pasta de trabalho explícita
+
+            resultado = ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", sys.executable, f'"{script}" {params}',
+                pasta_projeto, 1  # <- lpDirectory preenchido, não mais None
+            )
+
+            # ShellExecuteW retorna um valor <= 32 em caso de falha/recusa
+            if resultado <= 32:
+                print(f"[AVISO] Elevação não concedida (código {resultado}) - "
+                      f"continuando SEM privilégios de administrador. "
+                      f"Algumas funções de automação podem falhar.", flush=True)
+                return  # <- NÃO sai do programa, deixa continuar sem admin
+
+            sys.exit(0)  # só sai se a elevação realmente foi disparada com sucesso
     except Exception as e:
-        print(f"[ERRO ELEVAÇÃO] Falha ao tentar elevar: {e}", flush=True)
+        print(f"[ERRO ELEVAÇÃO] Falha ao tentar elevar: {e} - continuando sem admin.", flush=True)
 
 # re_launch_as_admin() # Movido para o bloco if __name__ == "__main__"
 
@@ -2750,8 +2764,9 @@ def iniciar_gui_desktop():
     api = jarvis_api
     
     # Inicia módulos autônomos de forma silenciosa e segura
-    try: iniciar_proatividade()
-    except Exception: pass
+    # try: iniciar_proatividade()  # DESATIVADO A PEDIDO DO USUÁRIO - ele
+    # não quer análise de tela nem fala espontânea sem comando explícito.
+    # except Exception: pass
 
     # Inicia Leitura Labial Óptica (Fase 7) - opcional
     try:
@@ -2765,11 +2780,17 @@ def iniciar_gui_desktop():
     try: iniciar_rag_automatico()
     except Exception: pass
 
-    # Inicia a Pipeline de Cognição Contínua (FDM-3) - opcional
-    try:
-        vision_pipeline.start()
-    except Exception as e:
-        print(f"[GUI] Vision pipeline desativado: {e}")
+    # Inicia a Pipeline de Cognição Contínua (FDM-3) - DESATIVADA A PEDIDO
+    # DO USUÁRIO. Ele quer um assistente que age quando solicitado, não uma
+    # vigilância contínua da própria tela. Também estava pesando a máquina
+    # (uso alto e constante de CPU/GPU) e apresentando erros de qualquer
+    # forma (formato de imagem incompatível com Gemini/OpenRouter). Se essa
+    # função for reativada no futuro, ela precisa ser corrigida antes (ver
+    # skills/vision correspondente).
+    # try:
+    #     vision_pipeline.start()
+    # except Exception as e:
+    #     print(f"[GUI] Vision pipeline desativado: {e}")
     
     # Inicia a thread de streaming de tela para o HUD
     def _stream_loop():
@@ -2869,8 +2890,15 @@ if __name__ == "__main__":
         print("  J.A.R.V.I.S - Carregando Sistema...", flush=True)
         print("=" * 60, flush=True)
 
-        disable_quick_edit()
-        iniciar_servico_gestos()
+        # disable_quick_edit()  # DESATIVADO A PEDIDO DO USUÁRIO - ele quer poder
+                                # clicar/selecionar/copiar texto do terminal
+                                # livremente durante debug. Trade-off aceito:
+                                # um clique sem querer pode pausar o programa
+                                # (comportamento nativo do console do Windows,
+                                # resolve apertando Esc ou clicando de novo).
+        # iniciar_servico_gestos()  # DESATIVADO A PEDIDO DO USUÁRIO - ele não
+        # quer serviços que usam webcam/tela continuamente sem comando explícito.
+        # Pode virar sob-demanda no futuro, se ele pedir.
 
         # ── FASE 3: Aguarda servidor Flask estabilizar ─────────────
         print("[CARREGAMENTO] Aguardando servidor Flask (3s)...", flush=True)
