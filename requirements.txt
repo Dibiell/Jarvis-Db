@@ -5,6 +5,9 @@ google-genai
 playwright
 pywinauto
 pyperclip
+Pillow
+opencv-python
+pygame
 wikipedia
 requests
 pyautogui
@@ -16,7 +19,9 @@ chromadb
 sentence-transformers
 pypdf
 python-docx
-flask-socketio
+flask-socketio==5.6.1
+python-socketio==5.16.4
+python-engineio==4.13.5
 eventlet
 python-dotenv
 edge-tts
