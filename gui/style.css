@@ -318,7 +318,7 @@ h1 {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 300px;
+    width: clamp(260px, 25vw, 300px);
     background: rgba(10, 15, 25, 0.7);
     border: 1px solid var(--accent-mute);
     border-radius: 12px;
@@ -1087,7 +1087,7 @@ footer {
 /* --- Floating Panels --- */
 .floating-panel {
     position: absolute;
-    width: 280px;
+    width: clamp(240px, 25vw, 280px);
     background: var(--glass-bg);
     border: 1px solid var(--accent-mute);
     /* Sincronizado e Transparente */
@@ -1275,7 +1275,7 @@ footer {
         letter-spacing: 5px;
     }
 
-    .orb-container {
+    #orb-container {
         transform: translate(-50%, -50%) scale(var(--orb-scale));
     }
 
@@ -1328,8 +1328,8 @@ footer {
 }
 
 #intelligence-panel.maximized {
-    width: 800px !important;
-    height: 500px !important;
+    width: clamp(400px, 80vw, 800px) !important;
+    height: clamp(300px, 70vh, 500px) !important;
 }
 
 .panel-header {
@@ -1603,8 +1603,8 @@ body.protocol-video .zeta-glow-target {
     /* Movido levemente para cima conforme pedido */
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 680px;
-    height: 680px;
+    width: clamp(320px, 55vh, 680px);
+    height: clamp(320px, 55vh, 680px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1879,8 +1879,8 @@ body[data-theme="zeta"] .zeta-glow-target {
 
 /* Espelhamento Holográfico (FDM-3) */
 #holographic-mirror-floating {
-    width: 600px;
-    height: 400px;
+    width: clamp(300px, 50vw, 600px);
+    height: clamp(200px, 40vh, 400px);
     left: 330px;
     top: 50px;
     background: rgba(0, 20, 30, 0.85);

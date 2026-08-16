@@ -10,7 +10,11 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap"
         rel="stylesheet">
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Cliente Socket.IO via CDN, versão 4.x - PRECISA bater com a
+         série major de python-socketio/python-engineio no requirements.txt.
+         Se atualizar as libs Python de socket.io, atualizar esta versão
+         também (conferir compatibilidade em python-socketio docs). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 </head>
